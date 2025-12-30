@@ -197,8 +197,15 @@ class Server(DistributedTrainingDevice):
     self.n_params = sum([T.numel() for T in self.W.values()])
     self.bits_sent = []
 
-    self.client_sizes = torch.Tensor(stats["split"]).cuda()
+    # self.client_sizes = torch.Tensor(stats["split"]).cuda()
+    self.client_sizes = torch.tensor(stats["split"], dtype=torch.float32, device=device)
 
+    # Server optimizer state for SR-FedAdam (server-side only)
+    self.server_step = 0
+    self.m = {name : torch.zeros(value.shape).to(device) for name, value in self.W.items()}
+    self.v = {name : torch.zeros(value.shape).to(device) for name, value in self.W.items()}
+    # EMA fallback for sigma if requested
+    self.sigma_ema = {name : torch.zeros(1).to(device) for name, value in self.W.items()}
 
 
   def aggregate_weight_updates(self, clients, aggregation="mean"):
@@ -213,6 +220,138 @@ class Server(DistributedTrainingDevice):
     
     elif aggregation == "majority":
       majority_vote(target=self.dW, sources=[client.dW_compressed for client in clients], lr=self.hp["lr"])
+
+    # Apply server-side optimizer if configured
+    if self.hp.get("server_optimizer", "none") == "sr_fedadam":
+      self._apply_sr_fedadam(clients)
+
+
+  def _compute_inter_client_sigma2_block(self, clients, name, delta_block):
+    # Compute scalar sigma^2 for a parameter block as mean of squared norms across clients
+    if len(clients) == 0:
+      return torch.tensor(0.0).to(device)
+    per_client_vals = []
+    for client in clients:
+      diff = client.dW_compressed[name].to(device) - delta_block
+      per_client_vals.append(torch.sum(diff.pow(2)))
+    return torch.stack(per_client_vals).mean()
+
+
+  def _apply_sr_fedadam(self, clients):
+    # SR-FedAdam: apply Stein shrinkage to aggregated update self.dW
+    beta1 = self.hp.get('server_beta1', 0.9)
+    beta2 = self.hp.get('server_beta2', 0.999)
+    eps = self.hp.get('server_eps', 1e-8)
+    lr = self.hp.get('server_lr', None)
+    if lr is None:
+      lr = self.hp.get('lr', 0.0)
+
+    shrinkage_mode = self.hp.get('shrinkage_mode', 'global')
+    shrinkage_scope = self.hp.get('shrinkage_scope', 'all')
+    sigma_source = self.hp.get('sigma_source', 'inter_client')
+
+    # Prepare flattened/global quantities if needed
+    if shrinkage_mode == 'global':
+      # compute delta total and per-client total squared norms
+      total_diff_norm = 0.0
+      total_d = 0
+      for name in self.dW:
+        total_diff_norm += torch.sum((self.dW[name] - self.m[name]).pow(2)).to(device)
+        total_d += self.dW[name].numel()
+      # compute sigma^2 global across clients
+      if sigma_source == 'inter_client':
+        per_client_totals = []
+        for client in clients:
+          s = 0.0
+          for name in self.dW:
+            s += torch.sum((client.dW_compressed[name].to(device) - self.dW[name]).pow(2))
+          per_client_totals.append(s)
+        sigma2_global = torch.stack(per_client_totals).mean() if len(per_client_totals) > 0 else torch.tensor(0.0).to(device)
+
+    # Update moments (m, v) with aggregated (raw) delta first
+    for name in self.dW:
+      delta = self.dW[name].to(device)
+      # update biased first and second moments
+      self.m[name] = beta1 * self.m[name] + (1.0 - beta1) * delta
+      self.v[name] = beta2 * self.v[name] + (1.0 - beta2) * (delta.pow(2))
+
+    # Now compute Stein-shrinkage per block or global
+    logged_alphas = []
+    logged_sigmas = []
+    if shrinkage_mode == 'global':
+      # global alpha scalar
+      denom = total_diff_norm + eps
+      d_total = total_d if total_d > 0 else 1
+      alpha_raw = 1.0 - ((d_total - 2.0) * sigma2_global) / denom
+      alpha = float(alpha_raw.clamp(0.0, 1.0)) if isinstance(alpha_raw, torch.Tensor) else max(0.0, min(1.0, alpha_raw))
+      logged_alphas.append(alpha)
+      logged_sigmas.append(sigma2_global.item() if isinstance(sigma2_global, torch.Tensor) else float(sigma2_global))
+      # apply shrinkage across all blocks
+      for name in self.dW:
+        if shrinkage_scope == 'conv_only' and len(self.dW[name].shape) != 4:
+          # skip shrinkage for non-conv layers
+          continue
+        delta = self.dW[name].to(device)
+        diff = delta - self.m[name]
+        delta_sr = self.m[name] + alpha * diff
+        # replace aggregated update with shrinkage-corrected update
+        self.dW[name] = delta_sr.clone()
+
+    else:
+      # per-layer shrinkage
+      for name in self.dW:
+        if shrinkage_scope == 'conv_only' and len(self.dW[name].shape) != 4:
+          # skip shrinkage for non-conv layers
+          continue
+
+        delta = self.dW[name].to(device)
+        # estimate sigma^2 for this block
+        if sigma_source == 'inter_client':
+          sigma2 = self._compute_inter_client_sigma2_block(clients, name, delta)
+        else:
+          # EMA fallback
+          sigma2 = self.sigma_ema[name]
+
+        d_b = float(self.dW[name].numel())
+        diff = delta - self.m[name]
+        denom = torch.sum(diff.pow(2)) + eps
+        alpha_raw = 1.0 - ((d_b - 2.0) * sigma2) / denom
+        if isinstance(alpha_raw, torch.Tensor):
+          alpha = alpha_raw.clamp(0.0, 1.0).item()
+        else:
+          alpha = max(0.0, min(1.0, alpha_raw))
+
+        logged_alphas.append(alpha)
+        logged_sigmas.append(sigma2.item() if isinstance(sigma2, torch.Tensor) else float(sigma2))
+
+        delta_sr = self.m[name] + alpha * diff
+        self.dW[name] = delta_sr.clone()
+        # update sigma EMA (simple momentum)
+        if sigma_source == 'ema':
+          self.sigma_ema[name] = 0.99 * self.sigma_ema[name] + 0.01 * sigma2
+
+    # increment server step
+    self.server_step += 1
+    # Scale by adaptive denominator (FedAdam-like) before compression/downstream add
+    final_lr = lr if lr is not None else self.hp.get('lr', 1.0)
+    try:
+      for name in self.dW:
+        denom = torch.sqrt(self.v[name]) + eps
+        self.dW[name] = (final_lr * self.dW[name]) / denom
+    except Exception:
+      pass
+
+    # Logging shrinkage statistics to experiment
+    try:
+      if len(logged_alphas) > 0 and hasattr(self, 'xp') and self.xp is not None:
+        alphas = np.array(logged_alphas)
+        sigmas = np.array(logged_sigmas)
+        mean_alpha = float(alphas.mean())
+        frac_clipped = float(((alphas <= 0.0) | (alphas >= 1.0)).sum() / alphas.size)
+        mean_sigma = float(sigmas.mean())
+        self.xp.log({'sr_alpha_mean': mean_alpha, 'sr_alpha_frac_clipped': frac_clipped, 'sr_sigma_mean': mean_sigma}, printout=False)
+    except Exception:
+      pass
 
 
   def compress_weight_update_down(self, compression=None, accumulate=False, count_bits=False):

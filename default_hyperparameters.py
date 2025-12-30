@@ -1,8 +1,20 @@
 import numpy as np
 
 hp_default = {"local_iterations" : 1, "batch_size" : 100, "weight_decay" : 0.0, "optimizer" : "SGD", "momentum" : 0.0, 
-              "log_frequency" : -100, "aggregation" : "mean", 
-              "count_bits" : False, "participation_rate" : 1.0, "balancedness" : 1.0}
+    "log_frequency" : -100, "aggregation" : "mean", 
+      "count_bits" : False, "participation_rate" : 1.0, "balancedness" : 1.0}
+# Server-side optimizer defaults (SR-FedAdam settings)
+hp_default.update({
+  "server_optimizer": "none",  # options: 'none', 'sr_fedadam'
+  "server_beta1": 0.9,
+  "server_beta2": 0.999,
+  "server_eps": 1e-8,
+  "server_lr": None,
+  "shrinkage_mode": "global",   # 'global' or 'per_layer'
+  "shrinkage_scope": "all",     # 'all' or 'conv_only'
+  "sigma_source": "inter_client"  # 'inter_client' or 'ema'
+})
+    
     
 hp_net_dict = {
 

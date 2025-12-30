@@ -21,8 +21,8 @@ import copy
 #-------------------------------------------------------------------------------------------------------
 # DATASETS
 #-------------------------------------------------------------------------------------------------------
-DATA_PATH = os.path.join(os.environ['TRAINING_DATA'], 'PyTorch')
-
+# DATA_PATH = os.path.join(os.environ['TRAINING_DATA'], 'PyTorch')
+DATA_PATH = './data'
 
 def get_kws():
   '''Return MNIST train/test data and labels as numpy arrays'''

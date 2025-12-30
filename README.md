@@ -13,7 +13,17 @@ First, set environment variable 'TRAINING_DATA' to point to the directory where 
 
 will run the Federated Learning experiment specified in  
 
-`federated_learning.json`.
+## What this repo is
+Lightweight federated-learning simulator for experimenting with compressed communication and server-side aggregation rules.
+
+Quick highlights:
+- Run experiments defined in `federated_learning.json` with `python federated_learning.py`.
+- New experimental server optimizer: SR-FedAdam (server-side Stein-rule shrinkage).
+- Lightweight plotting tools in `tools/` to visualize `.npz` results.
+
+See `CHANGELOG.md` for a concise list of recent modifications and usage notes.
+
+SR-FedAdam is applied after aggregation and before the server broadcasts updates to clients.
 
 You can specify:
 
@@ -43,6 +53,34 @@ Run multiple experiments by listing different configurations.
 
 ## Options
 - `--schedule` : specify which batch of experiments to run, defaults to "main"
+
+## Utilities: plotting & analysis
+I added lightweight plotting utilities (adapted from a previous Taylor prototype) under `tools/`:
+
+- `tools/visualize_results.py` — read `results/*.npz` experiment outputs and produce per-run accuracy curves and dataset-level barplots.
+- `tools/plot_summary_by_bs.py` — build a sweep-like summary (dataset/method/batch-size) from saved `.npz` runs and produce bar/line plots grouped by batch-size and dataset.
+
+Usage examples:
+```
+python tools/visualize_results.py
+python tools/plot_summary_by_bs.py
+```
+
+Outputs are written to `results/plots`, `results/plots_by_bs`, and `results/plots_by_dataset` respectively.
+
+## Quick smoke run
+To run a small experiment and test SR-FedAdam locally edit `federated_learning.json` or override hyperparameters, then run:
+```
+python federated_learning.py --schedule main --start 0 --end 1
+```
+
+or
+
+```
+python federated_learning.py --schedule compare_sr --start 0 --end 3
+```
+
+If you want a dedicated single-round smoke test script, ask me and I'll add `smoke_run.py`.
 
 ## Citation 
 [Paper](https://arxiv.org/abs/1903.02891)

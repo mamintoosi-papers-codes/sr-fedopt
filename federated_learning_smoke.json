@@ -1,0 +1,69 @@
+{
+  "smoke": [
+    {
+      "dataset": [
+        "mnist"
+      ],
+      "net": [
+        "logistic"
+      ],
+      "iterations": [
+        10
+      ],
+      "n_clients": [
+        10
+      ],
+      "participation_rate": [
+        0.5
+      ],
+      "classes_per_client": [
+        10
+      ],
+      "batch_size": [
+        1
+      ],
+      "balancedness": [
+        1.0
+      ],
+      "momentum": [
+        0.0
+      ],
+      "compression": [
+        [
+          "none",
+          {}
+        ]
+      ],
+      "log_frequency": [
+        1
+      ],
+      "log_path": [
+        "results/smoke/"
+      ],
+      "server_optimizer": [
+        "sr_fedadam"
+      ],
+      "server_beta1": [
+        0.9
+      ],
+      "server_beta2": [
+        0.999
+      ],
+      "server_eps": [
+        1e-08
+      ],
+      "server_lr": [
+        1.0
+      ],
+      "shrinkage_mode": [
+        "global"
+      ],
+      "shrinkage_scope": [
+        "all"
+      ],
+      "sigma_source": [
+        "inter_client"
+      ]
+    }
+  ]
+}
