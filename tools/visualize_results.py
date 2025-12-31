@@ -33,6 +33,17 @@ def load_npz_files(root: Path):
         if isinstance(hp, dict):
             dataset = hp.get('dataset')
             method = hp.get('server_optimizer') or hp.get('optimizer')
+            # normalize method label (handle lists and legacy 'none')
+            if isinstance(method, (list, tuple)) and len(method) > 0:
+                method = method[0]
+            if isinstance(method, str):
+                m_low = method.lower()
+                if m_low in ('none', 'fedavg'):
+                    method = 'FedAvg'
+                elif m_low in ('sr_fedadam', 'sr-fedadam'):
+                    method = 'SR-FedAdam'
+                elif m_low in ('fedadam', 'fed_adam'):
+                    method = 'FedAdam'
 
         # fallback to filename parsing
         m = re.match(r"(.*?)_(.*?)_.*", f.stem)

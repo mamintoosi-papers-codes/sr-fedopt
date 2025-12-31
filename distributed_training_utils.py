@@ -222,7 +222,7 @@ class Server(DistributedTrainingDevice):
       majority_vote(target=self.dW, sources=[client.dW_compressed for client in clients], lr=self.hp["lr"])
 
     # Apply server-side optimizer if configured
-    so = self.hp.get("server_optimizer", "none")
+    so = self.hp.get("server_optimizer", "fedavg")
     if so == "sr_fedadam":
       self._apply_sr_fedadam(clients)
     elif so == "fedadam":

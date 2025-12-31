@@ -5,7 +5,7 @@ hp_default = {"local_iterations" : 1, "batch_size" : 100, "weight_decay" : 0.0, 
       "count_bits" : False, "participation_rate" : 1.0, "balancedness" : 1.0}
 # Server-side optimizer defaults (SR-FedAdam settings)
 hp_default.update({
-  "server_optimizer": "none",  # options: 'none', 'sr_fedadam'
+  "server_optimizer": "fedavg",  # options: 'fedavg', 'sr_fedadam', 'fedadam'
   "server_beta1": 0.9,
   "server_beta2": 0.999,
   "server_eps": 1e-8,
