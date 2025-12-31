@@ -77,7 +77,7 @@ python federated_learning.py --schedule main --start 0 --end 1
 or
 
 ```
-python federated_learning.py --schedule compare_sr --start 0 --end 3
+python federated_learning.py --schedule compare_sr --start 0 --end 15
 ```
 
 If you want a dedicated single-round smoke test script, ask me and I'll add `smoke_run.py`.

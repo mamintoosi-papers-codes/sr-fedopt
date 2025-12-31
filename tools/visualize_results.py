@@ -9,6 +9,13 @@ RESULTS_DIR = Path("results")
 OUT_DIR = RESULTS_DIR / "plots"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Fixed color mapping for consistent colors across all plots
+METHOD_COLORS = {
+    'FedAvg': '#1f77b4',      # blue
+    'SR-FedAdam': '#ff7f0e',  # orange
+    'FedAdam': '#2ca02c'      # green
+}
+
 
 def load_npz_files(root: Path):
     files = list(root.rglob("*.npz"))
@@ -87,6 +94,120 @@ def plot_per_run_curves(entries):
         plt.close()
 
 
+def plot_combined_curves(entries):
+    """Plot all methods for each dataset in a single figure with mean and std."""
+    # group by dataset first, then method
+    dataset_groups = {}
+    for e in entries:
+        dataset_groups.setdefault(e['dataset'], {}).setdefault(e['method'], []).append(e)
+    
+    for dataset, method_dict in dataset_groups.items():
+        plt.figure(figsize=(10, 6))
+        for method, runs in method_dict.items():
+            # collect all runs for this method
+            all_curves = []
+            for r in runs:
+                data = r['data']
+                if 'accuracy_test' in data:
+                    acc = np.array(data['accuracy_test'])
+                    all_curves.append(acc)
+            
+            if all_curves:
+                # pad curves to same length
+                max_len = max(len(c) for c in all_curves)
+                padded = []
+                for c in all_curves:
+                    if len(c) < max_len:
+                        padded.append(np.concatenate([c, [np.nan] * (max_len - len(c))]))
+                    else:
+                        padded.append(c)
+                
+                curves_array = np.array(padded)
+                mean_curve = np.nanmean(curves_array, axis=0)
+                std_curve = np.nanstd(curves_array, axis=0)
+                
+                rounds = np.arange(len(mean_curve))
+                color = METHOD_COLORS.get(method, '#333333')
+                
+                # plot mean line
+                plt.plot(rounds, mean_curve, label=method, color=color, linewidth=2)
+                # plot shaded std region
+                plt.fill_between(rounds, mean_curve - std_curve, mean_curve + std_curve, 
+                                color=color, alpha=0.2)
+        
+        plt.title(f"{dataset} - All Methods Comparison (Mean ± Std)")
+        plt.xlabel("Communication Round")
+        plt.ylabel("Test Accuracy")
+        plt.legend()
+        plt.grid(True)
+        out = OUT_DIR / f"{dataset}_all_methods_combined.png"
+        plt.tight_layout()
+        plt.savefig(out)
+        plt.close()
+        print(f"Combined plot saved: {out}")
+
+
+def export_data_to_csv(entries):
+    """Export accuracy curves and statistics to CSV files."""
+    # group by dataset
+    dataset_groups = {}
+    for e in entries:
+        dataset_groups.setdefault(e['dataset'], {}).setdefault(e['method'], []).append(e)
+    
+    for dataset, method_dict in dataset_groups.items():
+        # === Export individual run curves ===
+        all_data = {}
+        max_rounds = 0
+        
+        for method, runs in method_dict.items():
+            for run_idx, r in enumerate(runs):
+                data = r['data']
+                if 'accuracy_test' in data:
+                    acc = np.array(data['accuracy_test'])
+                    col_name = f"{method}_run{run_idx+1}" if len(runs) > 1 else method
+                    all_data[col_name] = acc
+                    max_rounds = max(max_rounds, len(acc))
+        
+        if all_data:
+            # create dataframe with round numbers
+            df_dict = {'round': list(range(max_rounds))}
+            for col_name, values in all_data.items():
+                # pad with NaN if needed
+                padded = list(values) + [np.nan] * (max_rounds - len(values))
+                df_dict[col_name] = padded
+            
+            df = pd.DataFrame(df_dict)
+            csv_path = OUT_DIR / f"{dataset}_accuracy_curves.csv"
+            df.to_csv(csv_path, index=False)
+            print(f"CSV data saved: {csv_path}")
+        
+        # === Export statistics summary ===
+        stats_rows = []
+        for method, runs in method_dict.items():
+            final_accs = []
+            for r in runs:
+                data = r['data']
+                if 'accuracy_test' in data:
+                    acc = np.array(data['accuracy_test'])
+                    final_accs.append(float(acc[-1]))
+            
+            if final_accs:
+                stats_rows.append({
+                    'method': method,
+                    'mean_accuracy': np.mean(final_accs),
+                    'std_accuracy': np.std(final_accs),
+                    'best_accuracy': np.max(final_accs),
+                    'worst_accuracy': np.min(final_accs),
+                    'num_runs': len(final_accs)
+                })
+        
+        if stats_rows:
+            stats_df = pd.DataFrame(stats_rows)
+            stats_path = OUT_DIR / f"{dataset}_statistics_summary.csv"
+            stats_df.to_csv(stats_path, index=False)
+            print(f"Statistics summary saved: {stats_path}")
+
+
 def plot_summary_bar(entries):
     # collect final accuracy per run
     rows = []
@@ -107,9 +228,12 @@ def plot_summary_bar(entries):
     for dataset in df['dataset'].unique():
         sub = df[df['dataset'] == dataset]
         agg = sub.groupby('method')['acc_final'].agg(['mean', 'std']).reset_index()
+        
         plt.figure(figsize=(8, 4))
-        plt.bar(agg['method'], agg['mean'], yerr=agg['std'].fillna(0.0))
-        plt.title(f"{dataset} - Final Accuracy")
+        # use fixed colors for each method
+        colors = [METHOD_COLORS.get(m, '#333333') for m in agg['method']]
+        plt.bar(agg['method'], agg['mean'], yerr=agg['std'].fillna(0.0), color=colors, alpha=0.8)
+        plt.title(f"{dataset} - Final Accuracy (Mean ± Std)")
         plt.ylabel("Accuracy")
         plt.xticks(rotation=45)
         plt.tight_layout()
@@ -124,8 +248,10 @@ def main():
         print("No .npz results found under results/ - run experiments first or point to another directory.")
         return
     plot_per_run_curves(entries)
+    plot_combined_curves(entries)
     plot_summary_bar(entries)
-    print("Plots saved to:", OUT_DIR)
+    export_data_to_csv(entries)
+    print("All plots and CSV files saved to:", OUT_DIR)
 
 
 if __name__ == '__main__':

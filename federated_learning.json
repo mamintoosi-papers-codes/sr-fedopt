@@ -81,13 +81,24 @@
 				10
 			],
 			"log_path": [
-				"results/compare/fedavg/"
+				"results/compare/fedavg/run1/",
+				"results/compare/fedavg/run2/",
+				"results/compare/fedavg/run3/",
+				"results/compare/fedavg/run4/",
+				"results/compare/fedavg/run5/"
 			],
 			"server_optimizer": [
 				"fedavg"
 			],
 			"optimizer": [
 				"SGD"
+			],
+			"seed": [
+				42,
+				43,
+				44,
+				45,
+				46
 			]
 		},
 		{
@@ -128,7 +139,11 @@
 				10
 			],
 			"log_path": [
-				"results/compare/sr_fedadam/"
+				"results/compare/sr_fedadam/run1/",
+				"results/compare/sr_fedadam/run2/",
+				"results/compare/sr_fedadam/run3/",
+				"results/compare/sr_fedadam/run4/",
+				"results/compare/sr_fedadam/run5/"
 			],
 			"server_optimizer": [
 				"sr_fedadam"
@@ -156,6 +171,13 @@
 			],
 			"optimizer": [
 				"SGD"
+			],
+			"seed": [
+				42,
+				43,
+				44,
+				45,
+				46
 			]
 		},
 		{
@@ -196,13 +218,24 @@
 				10
 			],
 			"log_path": [
-				"results/compare/fedadam/"
+				"results/compare/fedadam/run1/",
+				"results/compare/fedadam/run2/",
+				"results/compare/fedadam/run3/",
+				"results/compare/fedadam/run4/",
+				"results/compare/fedadam/run5/"
 			],
 			"server_optimizer": [
 				"fedadam"
 			],
 			"optimizer": [
 				"SGD"
+			],
+			"seed": [
+				42,
+				43,
+				44,
+				45,
+				46
 			]
 		}
 	]
