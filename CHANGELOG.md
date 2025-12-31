@@ -10,6 +10,8 @@ All notable changes made to this repository during the SR-FedAdam integration an
 - Add visualization tools: `tools/visualize_results.py` and `tools/plot_summary_by_bs.py`.
 - Add `smoke_run.py` (temporary schedule backup/restore) and `compare_sr` schedule in `federated_learning.json`.
 - Update `README.md` with a short description and pointers to tools.
+- Add client-update Gaussian noise option, noise-aware schedule `compare_sr_noise`, and visualizer support (noise-tagged plots/CSVs).
+- Expand `compare_sr` to explicit multi-run (5x seeds per method) with stable colors and mean/std shading in plots.
 
 ## Details
 
@@ -20,12 +22,12 @@ All notable changes made to this repository during the SR-FedAdam integration an
   - Logs shrinkage statistics (`sr_alpha_mean`, `sr_alpha_frac_clipped`, `sr_sigma_mean`) to experiment results.
 
 - Tooling
-  - `tools/visualize_results.py`: reads `results/*.npz` files, produces per-run accuracy curves and barplots.
+  - `tools/visualize_results.py`: reads `results/*.npz` files, produces per-run accuracy curves and barplots, now groups by noise level, uses fixed colors per method, mean±std shading, and exports per-noise CSVs (`*_accuracy_curves.csv`, `*_statistics_summary.csv`).
   - `tools/plot_summary_by_bs.py`: builds a sweep-style summary and saves plots grouped by batch-size and dataset.
 
 - Experiments
   - `smoke_run.py` provides a safe one-shot smoke test (backs up and restores `federated_learning.json`).
-  - `federated_learning.json` includes a new `compare_sr` schedule (FedAvg baseline, SR-FedAdam, client-Adam).
+  - `federated_learning.json` includes `compare_sr` expanded to 5 seeds per method (distinct log paths) and a noise stress-test `compare_sr_noise` sweeping `client_update_noise_std` ∈ {0.01, 0.05, 0.1} with 3 seeds per method.
 
 ## How to reproduce
 

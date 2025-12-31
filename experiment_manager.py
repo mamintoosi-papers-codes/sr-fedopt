@@ -101,7 +101,8 @@ class Experiment():
         for key in ["communication_rounds", "compression_up", "accumulation_up", "compression_down", "accumulation_down",
                 "batch_size", "lr", "aggregation", "log_frequency", "local_iterations", "net", "dataset",
                 # include optimizer metadata so visualization can detect server/client methods
-                "optimizer", "server_optimizer", "server_lr", "server_beta1", "server_beta2", "shrinkage_mode", "sigma_source"]:
+                "optimizer", "server_optimizer", "server_lr", "server_beta1", "server_beta2", "shrinkage_mode", "sigma_source",
+                "client_update_noise_std"]:
             self.hyperparameters[key] = hp[key]
 
     def save_to_disc(self, path):

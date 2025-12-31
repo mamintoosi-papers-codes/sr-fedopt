@@ -37,9 +37,11 @@ def load_npz_files(root: Path):
         # try to infer dataset and method
         dataset = None
         method = None
+        noise = None
         if isinstance(hp, dict):
             dataset = hp.get('dataset')
             method = hp.get('server_optimizer') or hp.get('optimizer')
+            noise = hp.get('client_update_noise_std')
             # normalize method label (handle lists and legacy 'none')
             if isinstance(method, (list, tuple)) and len(method) > 0:
                 method = method[0]
@@ -66,6 +68,8 @@ def load_npz_files(root: Path):
                 method = 'unknown'
 
         entries.append({'path': f, 'data': data, 'hp': hp, 'dataset': dataset, 'method': method})
+        # attach noise info
+        entries[-1]['noise'] = noise if noise is not None else 'clean'
 
     return entries
 
@@ -74,34 +78,35 @@ def plot_per_run_curves(entries):
     # group by dataset+method
     groups = {}
     for e in entries:
-        key = (e['dataset'], e['method'])
+        key = (e['dataset'], e.get('noise', 'clean'), e['method'])
         groups.setdefault(key, []).append(e)
 
-    for (dataset, method), runs in groups.items():
+    for (dataset, noise, method), runs in groups.items():
         plt.figure(figsize=(6, 4))
         for r in runs:
             data = r['data']
             if 'accuracy_test' in data:
                 acc = np.array(data['accuracy_test'])
                 plt.plot(acc, alpha=0.6)
-        plt.title(f"{dataset} - {method}")
+        plt.title(f"{dataset} ({noise}) - {method}")
         plt.xlabel("Communication Round")
         plt.ylabel("Test Accuracy")
         plt.grid(True)
-        out = OUT_DIR / f"{dataset}_{method}_accuracy_curve.png"
+        out_noise = str(noise).replace('.', 'p')
+        out = OUT_DIR / f"{dataset}_{out_noise}_{method}_accuracy_curve.png"
         plt.tight_layout()
         plt.savefig(out)
         plt.close()
 
 
 def plot_combined_curves(entries):
-    """Plot all methods for each dataset in a single figure with mean and std."""
-    # group by dataset first, then method
+    """Plot all methods for each dataset/noise in a single figure with mean and std."""
+    # group by (dataset, noise) first, then method
     dataset_groups = {}
     for e in entries:
-        dataset_groups.setdefault(e['dataset'], {}).setdefault(e['method'], []).append(e)
+        dataset_groups.setdefault((e['dataset'], e.get('noise', 'clean')), {}).setdefault(e['method'], []).append(e)
     
-    for dataset, method_dict in dataset_groups.items():
+    for (dataset, noise), method_dict in dataset_groups.items():
         plt.figure(figsize=(10, 6))
         for method, runs in method_dict.items():
             # collect all runs for this method
@@ -134,13 +139,13 @@ def plot_combined_curves(entries):
                 # plot shaded std region
                 plt.fill_between(rounds, mean_curve - std_curve, mean_curve + std_curve, 
                                 color=color, alpha=0.2)
-        
-        plt.title(f"{dataset} - All Methods Comparison (Mean ± Std)")
+            out_noise = str(noise).replace('.', 'p')
+            plt.title(f"{dataset} ({noise}) - All Methods (Mean ± Std)")
         plt.xlabel("Communication Round")
         plt.ylabel("Test Accuracy")
         plt.legend()
         plt.grid(True)
-        out = OUT_DIR / f"{dataset}_all_methods_combined.png"
+            out = OUT_DIR / f"{dataset}_{out_noise}_all_methods_combined.png"
         plt.tight_layout()
         plt.savefig(out)
         plt.close()
@@ -149,12 +154,12 @@ def plot_combined_curves(entries):
 
 def export_data_to_csv(entries):
     """Export accuracy curves and statistics to CSV files."""
-    # group by dataset
+    # group by (dataset, noise)
     dataset_groups = {}
     for e in entries:
-        dataset_groups.setdefault(e['dataset'], {}).setdefault(e['method'], []).append(e)
+        dataset_groups.setdefault((e['dataset'], e.get('noise', 'clean')), {}).setdefault(e['method'], []).append(e)
     
-    for dataset, method_dict in dataset_groups.items():
+    for (dataset, noise), method_dict in dataset_groups.items():
         # === Export individual run curves ===
         all_data = {}
         max_rounds = 0
@@ -177,7 +182,8 @@ def export_data_to_csv(entries):
                 df_dict[col_name] = padded
             
             df = pd.DataFrame(df_dict)
-            csv_path = OUT_DIR / f"{dataset}_accuracy_curves.csv"
+            noise_tag = str(noise).replace('.', 'p')
+            csv_path = OUT_DIR / f"{dataset}_{noise_tag}_accuracy_curves.csv"
             df.to_csv(csv_path, index=False)
             print(f"CSV data saved: {csv_path}")
         
@@ -203,7 +209,8 @@ def export_data_to_csv(entries):
         
         if stats_rows:
             stats_df = pd.DataFrame(stats_rows)
-            stats_path = OUT_DIR / f"{dataset}_statistics_summary.csv"
+            noise_tag = str(noise).replace('.', 'p')
+            stats_path = OUT_DIR / f"{dataset}_{noise_tag}_statistics_summary.csv"
             stats_df.to_csv(stats_path, index=False)
             print(f"Statistics summary saved: {stats_path}")
 
@@ -218,26 +225,26 @@ def plot_summary_bar(entries):
                 final = float(np.array(data['accuracy_test'])[-1])
             except Exception:
                 continue
-            rows.append({'dataset': e['dataset'], 'method': e['method'], 'acc_final': final})
+            rows.append({'dataset': e['dataset'], 'noise': e.get('noise', 'clean'), 'method': e['method'], 'acc_final': final})
 
     if not rows:
         print("[WARN] No accuracy_test arrays found in results.")
         return
 
     df = pd.DataFrame(rows)
-    for dataset in df['dataset'].unique():
-        sub = df[df['dataset'] == dataset]
+    for (dataset, noise), sub in df.groupby(['dataset', 'noise']):
         agg = sub.groupby('method')['acc_final'].agg(['mean', 'std']).reset_index()
         
         plt.figure(figsize=(8, 4))
         # use fixed colors for each method
         colors = [METHOD_COLORS.get(m, '#333333') for m in agg['method']]
         plt.bar(agg['method'], agg['mean'], yerr=agg['std'].fillna(0.0), color=colors, alpha=0.8)
-        plt.title(f"{dataset} - Final Accuracy (Mean ± Std)")
+        plt.title(f"{dataset} ({noise}) - Final Accuracy (Mean ± Std)")
         plt.ylabel("Accuracy")
         plt.xticks(rotation=45)
         plt.tight_layout()
-        out = OUT_DIR / f"{dataset}_accuracy_barplot.png"
+        noise_tag = str(noise).replace('.', 'p')
+        out = OUT_DIR / f"{dataset}_{noise_tag}_accuracy_barplot.png"
         plt.savefig(out)
         plt.close()
 

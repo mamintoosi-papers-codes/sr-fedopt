@@ -166,15 +166,25 @@ class Client(DistributedTrainingDevice):
   
   def compress_weight_update_up(self, compression=None, accumulate=False, count_bits=False):
 
+    # Optionally add Gaussian noise to client updates before compression
+    noise_std = float(self.hp.get('client_update_noise_std', 0.0) or 0.0)
+    if noise_std > 0:
+      noisy_source = {}
+      for name in self.dW:
+        noise = torch.randn_like(self.dW[name]) * noise_std
+        noisy_source[name] = self.dW[name] + noise
+    else:
+      noisy_source = self.dW
+
     if accumulate and compression[0] != "none":
       # compression with error accumulation     
-      add(target=self.A, source=self.dW)
+      add(target=self.A, source=noisy_source)
       compress(target=self.dW_compressed, source=self.A, compress_fun=comp.compression_function(*compression))
       subtract(target=self.A, source=self.dW_compressed)
 
     else: 
       # compression without error accumulation
-      compress(target=self.dW_compressed, source=self.dW, compress_fun=comp.compression_function(*compression))
+      compress(target=self.dW_compressed, source=noisy_source, compress_fun=comp.compression_function(*compression))
 
     if count_bits:
       # Compute the update size

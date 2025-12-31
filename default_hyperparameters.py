@@ -2,7 +2,9 @@ import numpy as np
 
 hp_default = {"local_iterations" : 1, "batch_size" : 100, "weight_decay" : 0.0, "optimizer" : "SGD", "momentum" : 0.0, 
     "log_frequency" : -100, "aggregation" : "mean", 
-      "count_bits" : False, "participation_rate" : 1.0, "balancedness" : 1.0}
+      "count_bits" : False, "participation_rate" : 1.0, "balancedness" : 1.0,
+      # client-side update noise (std of Gaussian added to dW before upload)
+      "client_update_noise_std": 0.0}
 # Server-side optimizer defaults (SR-FedAdam settings)
 hp_default.update({
   "server_optimizer": "fedavg",  # options: 'fedavg', 'sr_fedadam', 'fedadam'
