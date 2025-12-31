@@ -3,6 +3,7 @@ import time
 import os
 import argparse
 import random
+import shutil
 
 import numpy as np
 import torch, torchvision
@@ -43,6 +44,13 @@ def run_experiments(experiments):
   for xp_count, xp in enumerate(experiments):
     hp = dhp.get_hp(xp.hyperparameters)
     xp.prepare(hp)
+    # clear previous results for this experiment to avoid mixing runs
+    try:
+      if 'log_path' in hp and hp['log_path']:
+        shutil.rmtree(hp['log_path'], ignore_errors=True)
+        os.makedirs(hp['log_path'], exist_ok=True)
+    except Exception:
+      pass
     print(xp)
 
     # Load the Data and split it among the Clients

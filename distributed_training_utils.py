@@ -222,8 +222,35 @@ class Server(DistributedTrainingDevice):
       majority_vote(target=self.dW, sources=[client.dW_compressed for client in clients], lr=self.hp["lr"])
 
     # Apply server-side optimizer if configured
-    if self.hp.get("server_optimizer", "none") == "sr_fedadam":
+    so = self.hp.get("server_optimizer", "none")
+    if so == "sr_fedadam":
       self._apply_sr_fedadam(clients)
+    elif so == "fedadam":
+      self._apply_fedadam(clients)
+
+
+  def _apply_fedadam(self, clients):
+    # Server-side Adam-like aggregator: update moments and scale aggregated update
+    beta1 = self.hp.get('server_beta1', 0.9)
+    beta2 = self.hp.get('server_beta2', 0.999)
+    eps = self.hp.get('server_eps', 1e-8)
+    lr = self.hp.get('server_lr', None)
+    if lr is None:
+      lr = self.hp.get('lr', 0.0)
+
+    # Update biased first and second moments using aggregated delta
+    for name in self.dW:
+      delta = self.dW[name].to(device)
+      self.m[name] = beta1 * self.m[name] + (1.0 - beta1) * delta
+      self.v[name] = beta2 * self.v[name] + (1.0 - beta2) * (delta.pow(2))
+
+    # Apply adaptive scaling (FedAdam style)
+    try:
+      for name in self.dW:
+        denom = torch.sqrt(self.v[name]) + eps
+        self.dW[name] = (lr * self.dW[name]) / denom
+    except Exception:
+      pass
 
 
   def _compute_inter_client_sigma2_block(self, clients, name, delta_block):

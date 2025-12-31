@@ -79,9 +79,9 @@
 		"momentum": [0.0],
 		"compression": [["none", {}]],
 		"log_frequency": [50],
-		"log_path": ["results/compare/client_adam/"],
-		"server_optimizer": ["none"],
-		"optimizer": ["Adam"]
+		"log_path": ["results/compare/fedadam/"],
+		"server_optimizer": ["fedadam"],
+		"optimizer": ["SGD"]
 	}
 ]
 }
