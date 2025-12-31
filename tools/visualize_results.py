@@ -145,7 +145,7 @@ def plot_combined_curves(entries):
         plt.ylabel("Test Accuracy")
         plt.legend()
         plt.grid(True)
-            out = OUT_DIR / f"{dataset}_{out_noise}_all_methods_combined.png"
+        out = OUT_DIR / f"{dataset}_{out_noise}_all_methods_combined.png"
         plt.tight_layout()
         plt.savefig(out)
         plt.close()
