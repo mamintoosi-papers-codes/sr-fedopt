@@ -288,7 +288,8 @@ def get_data_loaders(hp, verbose=True):
   # (e.g., logistic) receive correct in_size when images are resized.
   try:
     if transforms_train is not None:
-      sample = transforms_train(x_train[0])
+      # Use the same input type as DataLoader (torch.Tensor) when probing transforms
+      sample = transforms_train(torch.Tensor(x_train[0]))
       # sample is a tensor with shape (C,H,W)
       input_shape = tuple(sample.shape)
       input_size = int(np.prod(input_shape))
