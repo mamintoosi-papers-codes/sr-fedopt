@@ -150,56 +150,31 @@
 			"seeds": [42, 43, 44, 45, 46]
 		}
 	],
-	"test_multi_dataset_noise": [
+	"all_logistic": [
 		{
-			"dataset": ["mnist", "fashionmnist"],
+			"dataset": ["cifar10", "mnist", "fashionmnist"],
 			"net": ["logistic"],
-			"iterations": [2],
-			"n_clients": [10],
+			"iterations": [200],
+			"n_clients": [50],
 			"participation_rate": [0.5],
 			"classes_per_client": [10],
 			"batch_size": [1],
 			"balancedness": [1.0],
 			"momentum": [0.0],
 			"compression": [["none", {}]],
-			"log_frequency": [5],
+			"log_frequency": [10],
 			"optimizer": ["SGD"],
-			"server_optimizer": ["fedavg", "sr_fedadam"],
+			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
 			"server_beta1": [0.9],
 			"server_beta2": [0.999],
 			"server_eps": [1e-8],
 			"server_lr": [1.0],
-			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["conv_only"],
+			"shrinkage_mode": ["global"],
+			"shrinkage_scope": ["all"],
 			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.05],
-			"base_log_path": ["results/test/"],
-			"seeds": [42]
-		},
-		{
-			"dataset": ["cifar10"],
-			"net": ["cnn"],
-			"iterations": [2],
-			"n_clients": [10],
-			"participation_rate": [0.5],
-			"classes_per_client": [10],
-			"batch_size": [1],
-			"balancedness": [1.0],
-			"momentum": [0.0],
-			"compression": [["none", {}]],
-			"log_frequency": [5],
-			"optimizer": ["SGD"],
-			"server_optimizer": ["fedavg", "sr_fedadam"],
-			"server_beta1": [0.9],
-			"server_beta2": [0.999],
-			"server_eps": [1e-8],
-			"server_lr": [1.0],
-			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["conv_only"],
-			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.05],
-			"base_log_path": ["results/test/"],
-			"seeds": [42]
+			"client_update_noise_std": [0.0, 0.01, 0.05],
+			"base_log_path": ["results/all_logistic/"],
+			"seeds": [42, 43, 44, 45, 46]
 		}
 	],
 	"fast_multi_dataset_noise": [
@@ -222,16 +197,16 @@
 			"server_eps": [1e-8],
 			"server_lr": [1.0],
 			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["conv_only"],
+			"shrinkage_scope": ["all"],
 			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
+			"client_update_noise_std": [0.0, 0.01, 0.05],
 			"base_log_path": ["results/fast_multi_dataset/"],
-			"seeds": [42, 43, 44]
+			"seeds": [42, 43, 44, 45, 46]
 		},
 		{
 			"dataset": ["cifar10"],
 			"net": ["cnn"],
-			"iterations": [200],
+			"iterations": [400],
 			"n_clients": [50],
 			"participation_rate": [0.5],
 			"classes_per_client": [10],
@@ -240,18 +215,18 @@
 			"momentum": [0.0],
 			"compression": [["none", {}]],
 			"log_frequency": [10],
-			"optimizer": ["SGD"],
+			"optimizer": ["Adam"],
 			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
 			"server_beta1": [0.9],
 			"server_beta2": [0.999],
 			"server_eps": [1e-8],
-			"server_lr": [1.0],
+			"server_lr": [0.3],
 			"shrinkage_mode": ["per-layer"],
 			"shrinkage_scope": ["conv_only"],
 			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
+			"client_update_noise_std": [0.0, 0.01, 0.05],
 			"base_log_path": ["results/fast_multi_dataset/"],
-			"seeds": [42, 43, 44]
+			"seeds": [42, 43, 44, 45, 46]
 		}
 	]
 }

@@ -224,7 +224,7 @@ def export_data_to_csv(entries):
             stats_df = pd.DataFrame(stats_rows)
             noise_tag = str(noise).replace('.', 'p')
             stats_path = OUT_DIR / f"{dataset}_{noise_tag}_statistics_summary.csv"
-            stats_df.to_csv(stats_path, index=False)
+            stats_df.to_csv(stats_path, index=False, float_format='%.4f')
             print(f"Statistics summary saved: {stats_path}")
 
 
