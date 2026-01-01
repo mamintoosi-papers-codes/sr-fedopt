@@ -171,14 +171,14 @@ def _expand_with_seeds(hp_spec):
             
             # Auto-generate log_path if not manually specified
             if 'log_path' not in hp_spec:
-                # Format: base/[noise_level/]method/run_seed/
+                # Format: base/dataset/[sigma{noise}/]method/run{seed}/
                 if noise == 0.0:
-                    # No noise: base/method/run_seed/
-                    exp['log_path'] = f"{base_log_path}{method}/run{seed}/"
+                    # No noise: base/dataset/method/run{seed}/
+                    exp['log_path'] = f"{base_log_path}{dataset}/{method}/run{seed}/"
                 else:
-                    # With noise: base/sigma{noise}/method/run_seed/
+                    # With noise: base/dataset/sigma{noise}/method/run{seed}/
                     noise_str = f"sigma{noise}".replace('.', 'p')
-                    exp['log_path'] = f"{base_log_path}{noise_str}/{method}/run{seed}/"
+                    exp['log_path'] = f"{base_log_path}{dataset}/{noise_str}/{method}/run{seed}/"
             else:
                 # Use manually specified log_path (should be a template or list)
                 exp['log_path'] = hp_spec['log_path'][0] if isinstance(hp_spec['log_path'], list) else hp_spec['log_path']

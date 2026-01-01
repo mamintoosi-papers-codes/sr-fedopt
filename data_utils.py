@@ -284,7 +284,11 @@ def get_data_loaders(hp, verbose=True):
   train_loader = torch.utils.data.DataLoader(CustomImageDataset(x_train, y_train, transforms_eval), batch_size=100, shuffle=False)
   test_loader  = torch.utils.data.DataLoader(CustomImageDataset(x_test, y_test, transforms_eval), batch_size=100, shuffle=False) 
 
-  stats = {"split" : [x.shape[0] for x, y in split]}
+  stats = {
+    "split" : [x.shape[0] for x, y in split],
+    "input_shape" : x_train.shape[1:],  # (channels, height, width)
+    "input_size" : np.prod(x_train.shape[1:])  # total number of input features
+  }
 
   return client_loaders, train_loader, test_loader, stats
 

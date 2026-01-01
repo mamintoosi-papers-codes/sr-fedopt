@@ -58,8 +58,14 @@ def run_experiments(experiments):
 
     # Instantiate Clients and Server with Neural Net
     net = getattr(neural_nets, hp['net'])
-    clients = [Client(loader, net().to(device), hp, xp, id_num=i) for i, loader in enumerate(client_loaders)]
-    server = Server(test_loader, net().to(device), hp, xp, stats)
+    # Pass input parameters to models that need them
+    net_kwargs = {}
+    if hp['net'] == 'logistic' and 'input_size' in stats:
+        net_kwargs['in_size'] = stats['input_size']
+    elif hp['net'] == 'cnn' and 'input_shape' in stats:
+        net_kwargs['in_channels'] = stats['input_shape'][0]  # first dimension is channels
+    clients = [Client(loader, net(**net_kwargs).to(device), hp, xp, id_num=i) for i, loader in enumerate(client_loaders)]
+    server = Server(test_loader, net(**net_kwargs).to(device), hp, xp, stats)
 
     # Print optimizer specs
     print_model(device=clients[0])

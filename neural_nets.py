@@ -9,8 +9,11 @@ import numpy as np
 # new comment
 
 class logistic(nn.Module):
-    def __init__(self, in_size=32*32*1, num_classes=10):
+    def __init__(self, in_size=None, num_classes=10):
         super(logistic, self).__init__()
+        # Default to MNIST size if not specified
+        if in_size is None:
+            in_size = 28 * 28 * 1  # MNIST default
         self.linear = nn.Linear(in_size, num_classes)
 
     def forward(self, x):
@@ -41,13 +44,18 @@ class lstm(nn.Module):
 
 
 class cnn(nn.Module):
-    def __init__(self):
-        super(fedlearnCNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=5)
+    def __init__(self, in_channels=1, num_classes=10):
+        super(cnn, self).__init__()
+        self.in_channels = in_channels
+        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=5)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 32, kernel_size=5)
-        self.fc1 = nn.Linear(800, 256)
-        self.fc2 = nn.Linear(256, 10)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=5)
+        # Calculate size after convolutions
+        # For 28x28 (MNIST): (28-4)/2 = 12, (12-4)/2 = 4, 4*4*64 = 1024
+        # For 32x32 (CIFAR): (32-4)/2 = 14, (14-4)/2 = 5, 5*5*64 = 1600
+        fc_input_size = 1024 if in_channels == 1 else 1600
+        self.fc1 = nn.Linear(fc_input_size, 256)
+        self.fc2 = nn.Linear(256, num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
