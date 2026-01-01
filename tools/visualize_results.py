@@ -191,21 +191,34 @@ def export_data_to_csv(entries):
         stats_rows = []
         for method, runs in method_dict.items():
             final_accs = []
+            runtimes = []
             for r in runs:
                 data = r['data']
                 if 'accuracy_test' in data:
                     acc = np.array(data['accuracy_test'])
                     final_accs.append(float(acc[-1]))
+                # collect total runtime if available
+                if 'total_time' in data:
+                    try:
+                        runtimes.append(float(data['total_time'][ -1 ]))
+                    except Exception:
+                        try:
+                            runtimes.append(float(data['total_time']))
+                        except Exception:
+                            pass
             
             if final_accs:
-                stats_rows.append({
+                row = {
                     'method': method,
                     'mean_accuracy': np.mean(final_accs),
                     'std_accuracy': np.std(final_accs),
                     'best_accuracy': np.max(final_accs),
                     'worst_accuracy': np.min(final_accs),
                     'num_runs': len(final_accs)
-                })
+                }
+                if runtimes:
+                    row.update({'mean_runtime_s': float(np.mean(runtimes)), 'std_runtime_s': float(np.std(runtimes))})
+                stats_rows.append(row)
         
         if stats_rows:
             stats_df = pd.DataFrame(stats_rows)
@@ -247,6 +260,38 @@ def plot_summary_bar(entries):
         out = OUT_DIR / f"{dataset}_{noise_tag}_accuracy_barplot.png"
         plt.savefig(out)
         plt.close()
+
+        # Also plot mean runtimes per method if available
+        runtime_rows = []
+        for e in entries:
+            d = e['dataset']
+            n = e.get('noise', 'clean')
+            if d == dataset and n == noise:
+                data = e['data']
+                method = e['method']
+                if 'total_time' in data:
+                    try:
+                        rt = float(data['total_time'][-1])
+                    except Exception:
+                        try:
+                            rt = float(data['total_time'])
+                        except Exception:
+                            continue
+                    runtime_rows.append({'method': method, 'runtime': rt})
+
+        if runtime_rows:
+            rdf = pd.DataFrame(runtime_rows)
+            ragg = rdf.groupby('method')['runtime'].agg(['mean', 'std']).reset_index()
+            plt.figure(figsize=(8, 4))
+            colors = [METHOD_COLORS.get(m, '#333333') for m in ragg['method']]
+            plt.bar(ragg['method'], ragg['mean'], yerr=ragg['std'].fillna(0.0), color=colors, alpha=0.8)
+            plt.title(f"{dataset} ({noise}) - Mean Runtime (s)")
+            plt.ylabel("Seconds")
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            out_rt = OUT_DIR / f"{dataset}_{noise_tag}_runtime_barplot.png"
+            plt.savefig(out_rt)
+            plt.close()
 
 
 def main():

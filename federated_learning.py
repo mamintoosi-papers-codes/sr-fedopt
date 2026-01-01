@@ -124,6 +124,14 @@ def run_experiments(experiments):
                   "[{:.2f}%]\n".format(c_round/hp['communication_rounds']*100))
 
     # Delete objects to free up GPU memory
+    # Log total elapsed time for this experiment
+    total_time = time.time()-t1
+    xp.log({'total_time': total_time}, printout=False)
+
+    # Ensure final results are saved to disk
+    if 'log_path' in hp and hp['log_path']:
+      xp.save_to_disc(path=hp['log_path'])
+
     del server; clients.clear()
     torch.cuda.empty_cache()
 
