@@ -11,17 +11,13 @@ import numpy as np
 class logistic(nn.Module):
     def __init__(self, in_size=None, num_classes=10):
         super(logistic, self).__init__()
-        # Keep optional in_size, but allow lazy initialization so
-        # the model adapts to input transforms (28x28 or 32x32).
-        self.num_classes = num_classes
-        self.in_size = in_size
-        self.linear = None
+        # Default to MNIST size if not specified
+        if in_size is None:
+            in_size = 28 * 28 * 1  # MNIST default
+        self.linear = nn.Linear(in_size, num_classes)
 
     def forward(self, x):
         out = x.view(x.size(0), -1)
-        if self.linear is None:
-            in_features = out.size(1) if self.in_size is None else self.in_size
-            self.linear = nn.Linear(in_features, self.num_classes).to(out.device)
         out = self.linear(out)
         return out
 
