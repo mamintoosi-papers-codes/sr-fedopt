@@ -64,6 +64,9 @@ def run_experiments(experiments):
         net_kwargs['in_size'] = stats['input_size']
     elif hp['net'] == 'cnn' and 'input_shape' in stats:
         net_kwargs['in_channels'] = stats['input_shape'][0]  # first dimension is channels
+    # Debug prints to verify sizes being passed to models
+    print("Model construction stats:", stats)
+    print("Net kwargs:", net_kwargs)
     clients = [Client(loader, net(**net_kwargs).to(device), hp, xp, id_num=i) for i, loader in enumerate(client_loaders)]
     server = Server(test_loader, net(**net_kwargs).to(device), hp, xp, stats)
 
