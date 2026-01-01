@@ -284,10 +284,26 @@ def get_data_loaders(hp, verbose=True):
   train_loader = torch.utils.data.DataLoader(CustomImageDataset(x_train, y_train, transforms_eval), batch_size=100, shuffle=False)
   test_loader  = torch.utils.data.DataLoader(CustomImageDataset(x_test, y_test, transforms_eval), batch_size=100, shuffle=False) 
 
+  # Determine input shape/size after preprocessing transforms so models
+  # (e.g., logistic) receive correct in_size when images are resized.
+  try:
+    if transforms_train is not None:
+      sample = transforms_train(x_train[0])
+      # sample is a tensor with shape (C,H,W)
+      input_shape = tuple(sample.shape)
+      input_size = int(np.prod(input_shape))
+    else:
+      input_shape = x_train.shape[1:]
+      input_size = int(np.prod(input_shape))
+  except Exception:
+    # Fallback to raw numpy shape
+    input_shape = x_train.shape[1:]
+    input_size = int(np.prod(input_shape))
+
   stats = {
     "split" : [x.shape[0] for x, y in split],
-    "input_shape" : x_train.shape[1:],  # (channels, height, width)
-    "input_size" : np.prod(x_train.shape[1:])  # total number of input features
+    "input_shape" : input_shape,  # (channels, height, width) after transforms
+    "input_size" : input_size  # total number of input features after transforms
   }
 
   return client_loaders, train_loader, test_loader, stats
