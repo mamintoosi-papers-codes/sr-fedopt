@@ -5,7 +5,15 @@ import re
 import os
 import pandas as pd
 
-RESULTS_DIR = Path("results")
+# Find results directory (handles running from different locations)
+if Path("results").exists():
+    RESULTS_DIR = Path("results")
+elif Path("../results").exists():
+    RESULTS_DIR = Path("../results")
+else:
+    # Default to current directory + results
+    RESULTS_DIR = Path("results")
+    
 OUT_DIR = RESULTS_DIR / "plots"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -295,9 +303,10 @@ def plot_summary_bar(entries):
 
 
 def main():
+    print(f"Looking for results in: {RESULTS_DIR.absolute()}")
     entries = load_npz_files(RESULTS_DIR)
     if not entries:
-        print("No .npz results found under results/ - run experiments first or point to another directory.")
+        print(f"No .npz results found under {RESULTS_DIR} - run experiments first or point to another directory.")
         return
     plot_per_run_curves(entries)
     plot_combined_curves(entries)
