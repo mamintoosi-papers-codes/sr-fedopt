@@ -1,158 +1,7 @@
 {
 	"main": [
 		{
-			"dataset": [
-				"mnist"
-			],
-			"net": [
-				"logistic"
-			],
-			"iterations": [
-				2000
-			],
-			"n_clients": [
-				2000
-			],
-			"participation_rate": [
-				0.5
-			],
-			"classes_per_client": [
-				10
-			],
-			"batch_size": [
-				1
-			],
-			"balancedness": [
-				1.0
-			],
-			"momentum": [
-				0.9
-			],
-			"compression": [
-				[
-					"none",
-					{}
-				]
-			],
-			"log_frequency": [
-				30
-			],
-			"log_path": [
-				"results/trash/"
-			]
-		}
-	],
-	"compare_sr": [
-		{
-			"dataset": ["mnist"],
-			"net": ["logistic"],
-			"iterations": [200],
-			"n_clients": [50],
-			"participation_rate": [0.5],
-			"classes_per_client": [10],
-			"batch_size": [1],
-			"balancedness": [1.0],
-			"momentum": [0.0],
-			"compression": [["none", {}]],
-			"log_frequency": [10],
-			"optimizer": ["SGD"],
-			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
-			"server_beta1": [0.9],
-			"server_beta2": [0.999],
-			"server_eps": [1e-8],
-			"server_lr": [1.0],
-			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["conv_only"],
-			"sigma_source": ["inter_client"],
-			"base_log_path": ["results/compare/"],
-			"seeds": [42, 43, 44, 45, 46]
-		}
-	]
-	,
-	"compare_sr_noise": [
-		{
-			"dataset": ["mnist"],
-			"net": ["logistic"],
-			"iterations": [200],
-			"n_clients": [50],
-			"participation_rate": [0.5],
-			"classes_per_client": [10],
-			"batch_size": [1],
-			"balancedness": [1.0],
-			"momentum": [0.0],
-			"compression": [["none", {}]],
-			"log_frequency": [10],
-			"optimizer": ["SGD"],
-			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
-			"server_beta1": [0.9],
-			"server_beta2": [0.999],
-			"server_eps": [1e-8],
-			"server_lr": [1.0],
-			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["conv_only"],
-			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.01, 0.05, 0.1],
-			"base_log_path": ["results/compare_noise/"],
-			"seeds": [42, 43, 44]
-		}
-	],
-	"multi_dataset_noise": [
-		{
-			"dataset": ["mnist", "fashionmnist", "cifar10"],
-			"net": ["cnn"],
-			"iterations": [200],
-			"n_clients": [50],
-			"participation_rate": [0.5],
-			"classes_per_client": [10],
-			"batch_size": [1],
-			"balancedness": [1.0],
-			"momentum": [0.0],
-			"compression": [["none", {}]],
-			"log_frequency": [10],
-			"optimizer": ["SGD"],
-			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
-			"server_beta1": [0.9],
-			"server_beta2": [0.999],
-			"server_eps": [1e-8],
-			"server_lr": [1.0],
-			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["conv_only"],
-			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
-			"base_log_path": ["results/multi_dataset_noise/"],
-			"seeds": [42, 43, 44]
-		}
-	],
-	"mnist_logistic_noise": [
-		{
-			"dataset": ["mnist"],
-			"net": ["logistic"],
-			"iterations": [200],
-			"n_clients": [50],
-			"participation_rate": [0.5],
-			"classes_per_client": [10],
-			"batch_size": [1],
-			"balancedness": [1.0],
-			"momentum": [0.0],
-			"compression": [["none", {}]],
-			"log_frequency": [10],
-			"optimizer": ["SGD"],
-			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
-			"server_beta1": [0.9],
-			"server_beta2": [0.999],
-			"server_eps": [1e-8],
-			"server_lr": [1.0],
-			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["conv_only"],
-			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
-			"base_log_path": ["results/mnist_logistic_noise/"],
-			"seeds": [42, 43, 44, 45, 46]
-		}
-	],
-	"all_logistic": [
-		{
-			"dataset": ["cifar10", "mnist", "fashionmnist"],
+			"dataset": ["mnist", "fashionmnist"],
 			"net": ["logistic"],
 			"iterations": [200],
 			"n_clients": [50],
@@ -172,40 +21,13 @@
 			"shrinkage_mode": ["global"],
 			"shrinkage_scope": ["all"],
 			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05],
-			"base_log_path": ["results/all_logistic/"],
-			"seeds": [42, 43, 44, 45, 46]
-		}
-	],
-	"fast_multi_dataset_noise": [
-		{
-			"dataset": ["mnist", "fashionmnist"],
-			"net": ["logistic"],
-			"iterations": [200],
-			"n_clients": [50],
-			"participation_rate": [0.5],
-			"classes_per_client": [10],
-			"batch_size": [1],
-			"balancedness": [1.0],
-			"momentum": [0.0],
-			"compression": [["none", {}]],
-			"log_frequency": [10],
-			"optimizer": ["SGD"],
-			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
-			"server_beta1": [0.9],
-			"server_beta2": [0.999],
-			"server_eps": [1e-8],
-			"server_lr": [1.0],
-			"shrinkage_mode": ["per-layer"],
-			"shrinkage_scope": ["all"],
-			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05],
-			"base_log_path": ["results/fast_multi_dataset/"],
+			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
+			"base_log_path": ["results/main/"],
 			"seeds": [42, 43, 44, 45, 46]
 		},
 		{
 			"dataset": ["cifar10"],
-			"net": ["cnn"],
+			"net": ["simple_cnn"],
 			"iterations": [400],
 			"n_clients": [50],
 			"participation_rate": [0.5],
@@ -224,8 +46,8 @@
 			"shrinkage_mode": ["per-layer"],
 			"shrinkage_scope": ["conv_only"],
 			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05],
-			"base_log_path": ["results/fast_multi_dataset/"],
+			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
+			"base_log_path": ["results/main/"],
 			"seeds": [42, 43, 44, 45, 46]
 		}
 	]

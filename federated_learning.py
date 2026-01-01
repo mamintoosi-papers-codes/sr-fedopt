@@ -62,7 +62,7 @@ def run_experiments(experiments):
     net_kwargs = {}
     if hp['net'] == 'logistic' and 'input_size' in stats:
         net_kwargs['in_size'] = stats['input_size']
-    elif hp['net'] == 'cnn' and 'input_shape' in stats:
+    elif hp['net'] in ['cnn', 'simple_cnn'] and 'input_shape' in stats:
         net_kwargs['in_channels'] = stats['input_shape'][0]  # first dimension is channels
     # Debug prints to verify sizes being passed to models
     print("Model construction stats:", stats)

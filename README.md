@@ -4,6 +4,12 @@ Simulate Federated Learning with compressed communication on a large number of C
 
 Recreate experiments described in [*Sattler, F., Wiedemann, S., Müller, K. R., & Samek, W. (2019). Robust and Communication-Efficient Federated Learning from Non-IID Data. arXiv preprint arXiv:1903.02891.*](https://arxiv.org/abs/1903.02891)
 
+## Quick Start on Colab
+
+Open in Colab (runs `main.ipynb`):
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mamintoosi-papers-codes/SR-Adam/blob/main/main.ipynb)
+
 ## Quick Start
 
 ```bash
