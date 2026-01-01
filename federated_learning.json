@@ -154,7 +154,7 @@
 		{
 			"dataset": ["mnist", "fashionmnist"],
 			"net": ["logistic"],
-			"iterations": [5],
+			"iterations": [2],
 			"n_clients": [10],
 			"participation_rate": [0.5],
 			"classes_per_client": [10],
@@ -179,7 +179,7 @@
 		{
 			"dataset": ["cifar10"],
 			"net": ["cnn"],
-			"iterations": [5],
+			"iterations": [2],
 			"n_clients": [10],
 			"participation_rate": [0.5],
 			"classes_per_client": [10],
