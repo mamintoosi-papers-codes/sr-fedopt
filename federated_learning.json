@@ -122,5 +122,32 @@
 			"base_log_path": ["results/multi_dataset_noise/"],
 			"seeds": [42, 43, 44]
 		}
+	],
+	"test_multi_dataset_noise": [
+		{
+			"dataset": ["fashionmnist", "cifar10"],
+			"net": ["logistic"],
+			"iterations": [2],
+			"n_clients": [5],
+			"participation_rate": [0.5],
+			"classes_per_client": [10],
+			"batch_size": [1],
+			"balancedness": [1.0],
+			"momentum": [0.0],
+			"compression": [["none", {}]],
+			"log_frequency": [10],
+			"optimizer": ["SGD"],
+			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
+			"server_beta1": [0.9],
+			"server_beta2": [0.999],
+			"server_eps": [1e-8],
+			"server_lr": [1.0],
+			"shrinkage_mode": ["per-layer"],
+			"shrinkage_scope": ["conv_only"],
+			"sigma_source": ["inter_client"],
+			"client_update_noise_std": [0.0, 0.05],
+			"base_log_path": ["results/multi_dataset_noise/"],
+			"seeds": [42, 43]
+		}
 	]
 }
