@@ -1,0 +1,163 @@
+{
+	"_comment_basic": "Basic single-run experiment (legacy style)",
+	"basic_test": [
+		{
+			"dataset": ["mnist"],
+			"net": ["logistic"],
+			"iterations": [100],
+			"n_clients": [10],
+			"participation_rate": [0.5],
+			"classes_per_client": [10],
+			"batch_size": [1],
+			"balancedness": [1.0],
+			"momentum": [0.0],
+			"compression": [["none", {}]],
+			"log_frequency": [10],
+			"log_path": ["results/basic_test/"],
+			"optimizer": ["SGD"],
+			"server_optimizer": ["fedavg"],
+			"seed": [42]
+		}
+	],
+
+	"_comment_multi_seed": "Compact multi-seed format (recommended)",
+	"compare_methods": [
+		{
+			"dataset": ["mnist"],
+			"net": ["logistic"],
+			"iterations": [200],
+			"n_clients": [50],
+			"participation_rate": [0.5],
+			"classes_per_client": [10],
+			"batch_size": [1],
+			"balancedness": [1.0],
+			"momentum": [0.0],
+			"compression": [["none", {}]],
+			"log_frequency": [10],
+			"optimizer": ["SGD"],
+			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
+			"server_beta1": [0.9],
+			"server_beta2": [0.999],
+			"server_eps": [1e-8],
+			"server_lr": [1.0],
+			"shrinkage_mode": ["per-layer"],
+			"shrinkage_scope": ["conv_only"],
+			"sigma_source": ["inter_client"],
+			"base_log_path": ["results/compare/"],
+			"seeds": [42, 43, 44, 45, 46]
+		}
+	],
+
+	"_comment_noise": "Noise robustness study",
+	"noise_robustness": [
+		{
+			"dataset": ["mnist"],
+			"net": ["logistic"],
+			"iterations": [200],
+			"n_clients": [50],
+			"participation_rate": [0.5],
+			"classes_per_client": [10],
+			"batch_size": [1],
+			"balancedness": [1.0],
+			"momentum": [0.0],
+			"compression": [["none", {}]],
+			"log_frequency": [10],
+			"optimizer": ["SGD"],
+			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
+			"server_beta1": [0.9],
+			"server_beta2": [0.999],
+			"server_eps": [1e-8],
+			"server_lr": [1.0],
+			"shrinkage_mode": ["per-layer"],
+			"shrinkage_scope": ["conv_only"],
+			"sigma_source": ["inter_client"],
+			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
+			"base_log_path": ["results/noise_study/"],
+			"seeds": [42, 43, 44]
+		}
+	],
+
+	"_comment_hp_search": "Hyperparameter search example",
+	"hp_search": [
+		{
+			"dataset": ["mnist"],
+			"net": ["logistic"],
+			"iterations": [200],
+			"n_clients": [50],
+			"participation_rate": [0.5],
+			"classes_per_client": [10],
+			"batch_size": [1],
+			"balancedness": [1.0],
+			"momentum": [0.0],
+			"compression": [["none", {}]],
+			"log_frequency": [10],
+			"optimizer": ["SGD"],
+			"server_optimizer": ["sr_fedadam"],
+			"server_lr": [0.1, 1.0, 10.0],
+			"server_beta1": [0.9, 0.95],
+			"server_beta2": [0.999],
+			"server_eps": [1e-8],
+			"shrinkage_mode": ["per-layer"],
+			"shrinkage_scope": ["conv_only"],
+			"sigma_source": ["inter_client"],
+			"base_log_path": ["results/hp_search/"],
+			"seeds": [42, 43, 44, 45, 46]
+		}
+	],
+
+	"_comment_multi_dataset": "Multi-dataset comparison",
+	"multi_dataset": [
+		{
+			"dataset": ["mnist", "cifar10"],
+			"net": ["logistic"],
+			"iterations": [200],
+			"n_clients": [50],
+			"participation_rate": [0.5],
+			"classes_per_client": [10],
+			"batch_size": [1],
+			"balancedness": [1.0],
+			"momentum": [0.0],
+			"compression": [["none", {}]],
+			"log_frequency": [10],
+			"optimizer": ["SGD"],
+			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
+			"server_beta1": [0.9],
+			"server_beta2": [0.999],
+			"server_eps": [1e-8],
+			"server_lr": [1.0],
+			"shrinkage_mode": ["per-layer"],
+			"shrinkage_scope": ["conv_only"],
+			"sigma_source": ["inter_client"],
+			"base_log_path": ["results/multi_dataset/"],
+			"seeds": [42, 43, 44]
+		}
+	],
+
+	"_comment_quick_test": "Quick test with 2 seeds for rapid iteration",
+	"quick_test": [
+		{
+			"dataset": ["mnist"],
+			"net": ["logistic"],
+			"iterations": [50],
+			"n_clients": [20],
+			"participation_rate": [0.5],
+			"classes_per_client": [10],
+			"batch_size": [1],
+			"balancedness": [1.0],
+			"momentum": [0.0],
+			"compression": [["none", {}]],
+			"log_frequency": [10],
+			"optimizer": ["SGD"],
+			"server_optimizer": ["fedavg", "sr_fedadam"],
+			"server_beta1": [0.9],
+			"server_beta2": [0.999],
+			"server_eps": [1e-8],
+			"server_lr": [1.0],
+			"shrinkage_mode": ["per-layer"],
+			"shrinkage_scope": ["conv_only"],
+			"sigma_source": ["inter_client"],
+			"base_log_path": ["results/quick/"],
+			"seeds": [42, 43]
+		}
+	]
+}

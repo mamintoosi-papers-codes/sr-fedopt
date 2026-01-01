@@ -111,10 +111,81 @@ class Experiment():
 
 
 def get_all_hp_combinations(hp):
-    '''Turns a dict of lists into a list of dicts'''
+    '''Turns a dict of lists into a list of dicts.
+    
+    If 'seeds' key is present, expands experiments across all parameter combinations
+    and seeds, automatically generating log_path for each run.
+    '''
+    # Check if this is a compact specification with seeds
+    if 'seeds' in hp:
+        return _expand_with_seeds(hp)
+    
+    # Legacy behavior: cartesian product of all parameter lists
     combinations = it.product(*(hp[name] for name in hp))
     hp_dicts = [{key : value[i] for i,key in enumerate(hp)}for value in combinations]
     return hp_dicts
+
+
+def _expand_with_seeds(hp_spec):
+    '''Expands a compact experiment specification with seeds into multiple runs.
+    
+    Example input:
+        {
+            "dataset": ["mnist"],
+            "server_optimizer": ["fedavg", "fedadam", "sr_fedadam"],
+            "client_update_noise_std": [0.0, 0.01, 0.05],
+            "seeds": [42, 43, 44],
+            "base_log_path": ["results/compare/"],
+            ... (other parameters)
+        }
+    
+    Generates log_path as: {base_log_path}/sigma{noise}/{method}/run{seed}/
+    '''
+    seeds = hp_spec['seeds']
+    hp_copy = {k: v for k, v in hp_spec.items() if k != 'seeds'}
+    
+    # Extract base log path (default if not specified)
+    base_log_path = hp_copy.get('base_log_path', ['results/'])[0]
+    if 'base_log_path' in hp_copy:
+        del hp_copy['base_log_path']
+    
+    # Get all parameter combinations (excluding seeds and paths)
+    param_keys = [k for k in hp_copy.keys() if k != 'log_path']
+    param_combinations = it.product(*(hp_copy[name] for name in param_keys))
+    
+    expanded_experiments = []
+    
+    for param_values in param_combinations:
+        # Create a dict for this parameter combination
+        param_dict = {key: param_values[i] for i, key in enumerate(param_keys)}
+        
+        # Extract key identifiers for path generation
+        dataset = param_dict.get('dataset', 'unknown')
+        method = param_dict.get('server_optimizer', 'none')
+        noise = param_dict.get('client_update_noise_std', 0.0)
+        
+        # Generate experiments for each seed
+        for seed in seeds:
+            exp = param_dict.copy()
+            exp['seed'] = seed
+            
+            # Auto-generate log_path if not manually specified
+            if 'log_path' not in hp_spec:
+                # Format: base/[noise_level/]method/run_seed/
+                if noise == 0.0:
+                    # No noise: base/method/run_seed/
+                    exp['log_path'] = f"{base_log_path}{method}/run{seed}/"
+                else:
+                    # With noise: base/sigma{noise}/method/run_seed/
+                    noise_str = f"sigma{noise}".replace('.', 'p')
+                    exp['log_path'] = f"{base_log_path}{noise_str}/{method}/run{seed}/"
+            else:
+                # Use manually specified log_path (should be a template or list)
+                exp['log_path'] = hp_spec['log_path'][0] if isinstance(hp_spec['log_path'], list) else hp_spec['log_path']
+            
+            expanded_experiments.append(exp)
+    
+    return expanded_experiments
 
 
 def list_of_dicts_to_dict(hp_dicts):

@@ -23,7 +23,7 @@ wheels/
 share/python-wheels/
 sweeper_configs/
 data/
-results/
+results*/
 *.egg-info/
 .installed.cfg
 *.egg
