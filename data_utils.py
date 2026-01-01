@@ -41,19 +41,43 @@ def get_mnist():
   data_train = torchvision.datasets.MNIST(root=os.path.join(DATA_PATH, "MNIST"), train=True, download=True) 
   data_test = torchvision.datasets.MNIST(root=os.path.join(DATA_PATH, "MNIST"), train=False, download=True) 
   
-  x_train, y_train = data_train.train_data.numpy().reshape(-1,1,28,28)/255, np.array(data_train.train_labels)
-  x_test, y_test = data_test.test_data.numpy().reshape(-1,1,28,28)/255, np.array(data_test.test_labels)
+  # Handle both old and new PyTorch versions
+  if hasattr(data_train, 'train_data'):
+    x_train = data_train.train_data.numpy().reshape(-1,1,28,28)/255
+    y_train = np.array(data_train.train_labels)
+  else:
+    x_train = data_train.data.numpy().reshape(-1,1,28,28)/255
+    y_train = np.array(data_train.targets)
+  
+  if hasattr(data_test, 'test_data'):
+    x_test = data_test.test_data.numpy().reshape(-1,1,28,28)/255
+    y_test = np.array(data_test.test_labels)
+  else:
+    x_test = data_test.data.numpy().reshape(-1,1,28,28)/255
+    y_test = np.array(data_test.targets)
   
   return x_train, y_train, x_test, y_test
 
 
 def get_fashionmnist():
-  '''Return MNIST train/test data and labels as numpy arrays'''
+  '''Return FashionMNIST train/test data and labels as numpy arrays'''
   data_train = torchvision.datasets.FashionMNIST(root=os.path.join(DATA_PATH, "FashionMNIST"), train=True, download=True) 
   data_test = torchvision.datasets.FashionMNIST(root=os.path.join(DATA_PATH, "FashionMNIST"), train=False, download=True) 
   
-  x_train, y_train = data_train.train_data.numpy().reshape(-1,1,28,28)/255, np.array(data_train.train_labels)
-  x_test, y_test = data_test.test_data.numpy().reshape(-1,1,28,28)/255, np.array(data_test.test_labels)
+  # Handle both old and new PyTorch versions
+  if hasattr(data_train, 'train_data'):
+    x_train = data_train.train_data.numpy().reshape(-1,1,28,28)/255
+    y_train = np.array(data_train.train_labels)
+  else:
+    x_train = data_train.data.numpy().reshape(-1,1,28,28)/255
+    y_train = np.array(data_train.targets)
+  
+  if hasattr(data_test, 'test_data'):
+    x_test = data_test.test_data.numpy().reshape(-1,1,28,28)/255
+    y_test = np.array(data_test.test_labels)
+  else:
+    x_test = data_test.data.numpy().reshape(-1,1,28,28)/255
+    y_test = np.array(data_test.targets)
 
   return x_train, y_train, x_test, y_test
 
@@ -63,8 +87,22 @@ def get_cifar10():
   data_train = torchvision.datasets.CIFAR10(root=os.path.join(DATA_PATH, "CIFAR10"), train=True, download=True) 
   data_test = torchvision.datasets.CIFAR10(root=os.path.join(DATA_PATH, "CIFAR10"), train=False, download=True) 
   
-  x_train, y_train = data_train.train_data.transpose((0,3,1,2)), np.array(data_train.train_labels)
-  x_test, y_test = data_test.test_data.transpose((0,3,1,2)), np.array(data_test.test_labels)
+  # Handle both old and new PyTorch versions
+  # Old versions: train_data, train_labels
+  # New versions: data, targets
+  if hasattr(data_train, 'train_data'):
+    x_train = data_train.train_data.transpose((0,3,1,2))
+    y_train = np.array(data_train.train_labels)
+  else:
+    x_train = data_train.data.transpose((0,3,1,2))
+    y_train = np.array(data_train.targets)
+  
+  if hasattr(data_test, 'test_data'):
+    x_test = data_test.test_data.transpose((0,3,1,2))
+    y_test = np.array(data_test.test_labels)
+  else:
+    x_test = data_test.data.transpose((0,3,1,2))
+    y_test = np.array(data_test.targets)
   
   return x_train, y_train, x_test, y_test
 
