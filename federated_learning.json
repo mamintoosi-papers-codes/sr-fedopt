@@ -28,27 +28,28 @@
 		{
 			"dataset": ["cifar10"],
 			"net": ["simple_cnn"],
-			"iterations": [400],
-			"n_clients": [50],
-			"participation_rate": [0.5],
+			"iterations": [200],
+			"n_clients": [20],
+			"participation_rate": [0.2],
 			"classes_per_client": [10],
-			"batch_size": [64],
+			"batch_size": [256],
 			"balancedness": [1.0],
 			"momentum": [0.0],
 			"compression": [["none", {}]],
-			"log_frequency": [10],
+			"log_frequency": [50],
 			"optimizer": ["Adam"],
-			"server_optimizer": ["fedavg", "sr_fedadam", "fedadam"],
+			"server_optimizer": ["sr_fedadam", "fedadam"],
 			"server_beta1": [0.9],
 			"server_beta2": [0.999],
 			"server_eps": [1e-8],
-			"server_lr": [0.3],
+			"server_lr": [1.0],
 			"shrinkage_mode": ["per-layer"],
 			"shrinkage_scope": ["conv_only"],
 			"sigma_source": ["inter_client"],
-			"client_update_noise_std": [0.0, 0.01, 0.05, 0.1],
+			"local_iterations": [1],
+			"client_update_noise_std": [0.01, 0.05],
 			"base_log_path": ["results/main/"],
-			"seeds": [42, 43, 44, 45, 46]
+			"seeds": [42, 43]
 		}
 	]
 }

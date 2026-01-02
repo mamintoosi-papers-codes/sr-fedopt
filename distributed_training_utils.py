@@ -123,13 +123,6 @@ class Client(DistributedTrainingDevice):
       except: # Next epoch
         self.epoch_loader = iter(self.loader)
         self.epoch += 1
-
-        # Adapt lr according to schedule
-        if isinstance(self.scheduler, optim.lr_scheduler.LambdaLR):
-          self.scheduler.step()
-        if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau) and 'loss_test' in self.xp.results:
-          self.scheduler.step(self.xp.results['loss_test'][-1])
-        
         x, y = next(self.epoch_loader)
 
       x, y = x.to(device), y.to(device)
@@ -143,6 +136,12 @@ class Client(DistributedTrainingDevice):
       loss = self.loss_fn(y_, y)
       loss.backward()
       self.optimizer.step()
+
+      # Adapt lr according to schedule (AFTER optimizer.step())
+      if isinstance(self.scheduler, optim.lr_scheduler.LambdaLR):
+        self.scheduler.step()
+      if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau) and 'loss_test' in self.xp.results:
+        self.scheduler.step(self.xp.results['loss_test'][-1])
       
       running_loss += loss.item()
 

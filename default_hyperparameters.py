@@ -28,6 +28,10 @@ hp_net_dict = {
           {'type' : 'CNN', 'lr' : 0.1, 'batch_size' : 200, 'weight_decay' : 0.0, 'optimizer' : 'SGD', 'momentum' : 0.0,
           'lr_decay' : ['LambdaLR', {'lr_lambda' : lambda epoch: 1.0}], 'iterations' : 8000},
 
+  'simple_cnn': 
+          {'type' : 'CNN', 'lr' : 0.001, 'batch_size' : 200, 'weight_decay' : 0.0, 'optimizer' : 'Adam', 'momentum' : 0.0,
+          'lr_decay' : ['LambdaLR', {'lr_lambda' : lambda epoch: 1.0}], 'iterations' : 8000},
+
   'lstm': 
           {'type' : 'CNN', 'lr' : 0.1, 'momentum' : 0.9, 'batch_size' : 200, 'weight_decay' : 0.0, 'optimizer' : 'SGD',
           'lr_decay' : ['LambdaLR', {'lr_lambda' : lambda epoch: 1.0}], 'iterations' : 8000},
