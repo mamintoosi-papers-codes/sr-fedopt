@@ -286,106 +286,104 @@ class Server(DistributedTrainingDevice):
     shrinkage_scope = self.hp.get('shrinkage_scope', 'all')
     sigma_source = self.hp.get('sigma_source', 'inter_client')
 
-    # Prepare flattened/global quantities if needed
-    if shrinkage_mode == 'global':
-      # compute delta total and per-client total squared norms
-      total_diff_norm = 0.0
-      total_d = 0
-      for name in self.dW:
-        total_diff_norm += torch.sum((self.dW[name] - self.m[name]).pow(2)).to(device)
-        total_d += self.dW[name].numel()
-      # compute sigma^2 global across clients
-      if sigma_source == 'inter_client':
+    # --- Step 1: Compute inter-client sigma^2 (does not depend on moments) ---
+    if sigma_source == 'inter_client':
+      if shrinkage_mode == 'global':
         per_client_totals = []
         for client in clients:
-          s = 0.0
-          for name in self.dW:
-            s += torch.sum((client.dW_compressed[name].to(device) - self.dW[name]).pow(2))
+          s = sum(
+            torch.sum((client.dW_compressed[name].to(device) - self.dW[name]).pow(2))
+            for name in self.dW
+          )
           per_client_totals.append(s)
-        sigma2_global = torch.stack(per_client_totals).mean() if len(per_client_totals) > 0 else torch.tensor(0.0).to(device)
+        sigma2_global = torch.stack(per_client_totals).mean() if per_client_totals else torch.tensor(0.0).to(device)
+      # per-layer sigma^2 is computed inside the per-layer loop below
 
-    # Update moments (m, v) with aggregated (raw) delta first
+    # --- Step 2: Update first and second moments with aggregated delta ---
     for name in self.dW:
       delta = self.dW[name].to(device)
-      # update biased first and second moments
       self.m[name] = beta1 * self.m[name] + (1.0 - beta1) * delta
-      self.v[name] = beta2 * self.v[name] + (1.0 - beta2) * (delta.pow(2))
+      self.v[name] = beta2 * self.v[name] + (1.0 - beta2) * delta.pow(2)
 
-    # Now compute Stein-shrinkage per block or global
+    # --- Step 3: Apply Stein shrinkage (alpha and diff both use updated m_t) ---
     logged_alphas = []
     logged_sigmas = []
+
     if shrinkage_mode == 'global':
-      # global alpha scalar
+      # Compute sigma^2 for EMA source (global = sum of per-block EMA estimates)
+      if sigma_source == 'ema':
+        sigma2_global = sum(self.sigma_ema[name] for name in self.dW)
+        if isinstance(sigma2_global, torch.Tensor):
+          sigma2_global = sigma2_global.to(device)
+
+      # Compute ||delta - m_t||^2 using the NOW-UPDATED m (consistent with shrinkage below)
+      total_diff_norm = sum(
+        torch.sum((self.dW[name].to(device) - self.m[name]).pow(2))
+        for name in self.dW
+      )
+      total_d = sum(self.dW[name].numel() for name in self.dW)
+
       denom = total_diff_norm + eps
-      d_total = total_d if total_d > 0 else 1
-      alpha_raw = 1.0 - ((d_total - 2.0) * sigma2_global) / denom
+      alpha_raw = 1.0 - ((max(total_d, 3) - 2.0) * sigma2_global) / denom
       alpha = float(alpha_raw.clamp(0.0, 1.0)) if isinstance(alpha_raw, torch.Tensor) else max(0.0, min(1.0, alpha_raw))
       logged_alphas.append(alpha)
-      logged_sigmas.append(sigma2_global.item() if isinstance(sigma2_global, torch.Tensor) else float(sigma2_global))
-      # apply shrinkage across all blocks
+      logged_sigmas.append(float(sigma2_global.item() if isinstance(sigma2_global, torch.Tensor) else sigma2_global))
+
       for name in self.dW:
         if shrinkage_scope == 'conv_only' and len(self.dW[name].shape) != 4:
-          # skip shrinkage for non-conv layers
           continue
         delta = self.dW[name].to(device)
         diff = delta - self.m[name]
-        delta_sr = self.m[name] + alpha * diff
-        # replace aggregated update with shrinkage-corrected update
-        self.dW[name] = delta_sr.clone()
+        self.dW[name] = (self.m[name] + alpha * diff).clone()
+
+      # Update global sigma EMA if using EMA source
+      if sigma_source == 'ema':
+        block_var = total_diff_norm / max(total_d, 1)
+        for name in self.dW:
+          self.sigma_ema[name] = 0.99 * self.sigma_ema[name] + 0.01 * block_var
 
     else:
       # per-layer shrinkage
       for name in self.dW:
         if shrinkage_scope == 'conv_only' and len(self.dW[name].shape) != 4:
-          # skip shrinkage for non-conv layers
           continue
 
         delta = self.dW[name].to(device)
-        # estimate sigma^2 for this block
+
         if sigma_source == 'inter_client':
           sigma2 = self._compute_inter_client_sigma2_block(clients, name, delta)
         else:
-          # EMA fallback
           sigma2 = self.sigma_ema[name]
 
         d_b = float(self.dW[name].numel())
         diff = delta - self.m[name]
         denom = torch.sum(diff.pow(2)) + eps
-        alpha_raw = 1.0 - ((d_b - 2.0) * sigma2) / denom
-        if isinstance(alpha_raw, torch.Tensor):
-          alpha = alpha_raw.clamp(0.0, 1.0).item()
-        else:
-          alpha = max(0.0, min(1.0, alpha_raw))
+        alpha_raw = 1.0 - ((max(d_b, 3.0) - 2.0) * sigma2) / denom
+        alpha = float(alpha_raw.clamp(0.0, 1.0)) if isinstance(alpha_raw, torch.Tensor) else max(0.0, min(1.0, alpha_raw))
 
         logged_alphas.append(alpha)
-        logged_sigmas.append(sigma2.item() if isinstance(sigma2, torch.Tensor) else float(sigma2))
+        logged_sigmas.append(float(sigma2.item() if isinstance(sigma2, torch.Tensor) else sigma2))
 
-        delta_sr = self.m[name] + alpha * diff
-        self.dW[name] = delta_sr.clone()
-        # update sigma EMA (simple momentum)
+        self.dW[name] = (self.m[name] + alpha * diff).clone()
+
         if sigma_source == 'ema':
           self.sigma_ema[name] = 0.99 * self.sigma_ema[name] + 0.01 * sigma2
 
-    # increment server step
+    # --- Step 4: FedAdam-style adaptive scaling ---
     self.server_step += 1
-    # Scale by adaptive denominator (FedAdam-like) before compression/downstream add
-    final_lr = lr if lr is not None else self.hp.get('lr', 1.0)
-    try:
-      for name in self.dW:
-        denom = torch.sqrt(self.v[name]) + eps
-        self.dW[name] = (final_lr * self.dW[name]) / denom
-    except Exception:
-      pass
+    for name in self.dW:
+      self.dW[name] = (lr * self.dW[name]) / (torch.sqrt(self.v[name]) + eps)
 
-    # Logging shrinkage statistics to experiment
+    # --- Logging shrinkage statistics ---
     try:
-      if len(logged_alphas) > 0 and hasattr(self, 'xp') and self.xp is not None:
+      if logged_alphas and hasattr(self, 'xp') and self.xp is not None:
         alphas = np.array(logged_alphas)
         sigmas = np.array(logged_sigmas)
-        mean_alpha = float(alphas.mean())
-        frac_clipped = float(((alphas <= 0.0) | (alphas >= 1.0)).sum() / alphas.size)
-        mean_sigma = float(sigmas.mean())
-        self.xp.log({'sr_alpha_mean': mean_alpha, 'sr_alpha_frac_clipped': frac_clipped, 'sr_sigma_mean': mean_sigma}, printout=False)
+        self.xp.log({
+          'sr_alpha_mean': float(alphas.mean()),
+          'sr_alpha_frac_clipped': float(((alphas <= 0.0) | (alphas >= 1.0)).sum() / alphas.size),
+          'sr_sigma_mean': float(sigmas.mean()),
+        }, printout=False)
     except Exception:
       pass
 

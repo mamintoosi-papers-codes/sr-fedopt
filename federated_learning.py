@@ -9,6 +9,15 @@ import numpy as np
 import torch, torchvision
 import torch.optim as optim
 
+
+def set_seed(seed):
+    """Set all RNGs for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
 import data_utils
 import neural_nets
 import distributed_training_utils as dst
@@ -44,6 +53,11 @@ def run_experiments(experiments):
   for xp_count, xp in enumerate(experiments):
     hp = dhp.get_hp(xp.hyperparameters)
     xp.prepare(hp)
+
+    # Apply seed for reproducibility
+    if 'seed' in hp:
+      set_seed(int(hp['seed']))
+
     # clear previous results for this experiment to avoid mixing runs
     try:
       if 'log_path' in hp and hp['log_path']:

@@ -1,3 +1,28 @@
+# Running on Google Colab
+
+This guide covers running SR-FedOpt on Google Colab.
+(یک راهنمای فارسی نیز پیوست شده است / A Persian version follows.)
+
+---
+
+## Visualization Troubleshooting
+
+If you see `No .npz results found under results/` when running the visualizer:
+
+```bash
+# Make sure you are in the project root first:
+import os
+os.chdir('/content/drive/MyDrive/sr-fedopt')
+!python tools/visualize_results.py
+```
+
+Or use the wrapper script which auto-detects the project root:
+```bash
+!python visualize.py
+```
+
+---
+
 # اجرا روی Google Colab
 
 این راهنما برای اجرای پروژه SR-FedOpt روی Google Colab است.

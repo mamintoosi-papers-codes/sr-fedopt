@@ -86,7 +86,7 @@ def get_hp(hp_experiment):
     hp_experiment.update(hp_experiment["multi"])
     del hp_experiment["multi"]            
 
-  hp = hp_default
+  hp = hp_default.copy()  # avoid mutating the module-level default dict
   hp.update(hp_net_dict[hp_experiment["net"]])
   
   if "compression" in hp_experiment:
